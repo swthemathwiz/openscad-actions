@@ -1,0 +1,66 @@
+name: 'Build OpenSCAD'
+description: 'Build OpenSCAD models and images'
+inputs:
+  target:
+    description: 'Make target(s)'
+    type: string
+    required: false
+    default: 'all'
+  check_target:
+    description: 'Check for empty target'
+    type: boolean
+    required: false
+    default: false
+  use_xvfb:
+    description: 'Build under Xvfb'
+    type: boolean
+    required: false
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check for Empty Target
+      shell: bash
+      run: |
+        # Check non-empty target if requested
+        if [ '${{inputs.check_target}}' = 'true' ]; then
+          read -a target <<< '${{inputs.target}}'
+          if [ ${#target[@]} -eq 0 ]; then
+            echo "::error ::No build target specified"
+            exit 1
+          fi
+        fi
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Install OpenSCAD and Xvfb
+      shell: bash
+      run: |
+        # Run apt-get to install OpenSCAD and Xvfb packages
+        echo "::group::Install"
+        if [ '${{inputs.use_xvfb}}' = 'true' ]; then
+          sudo apt-get install openscad xvfb
+        else
+          sudo apt-get install openscad
+        fi
+        echo "::endgroup::"
+    - name: OpenSCAD Version
+      shell: bash
+      run: |
+        # Show the OpenSCAD Version
+        echo "::group::OpenSCAD Version"
+        openscad --version
+        echo "::endgroup::"
+    - name: Build OpenSCAD
+      shell: bash
+      run: |
+        # Run make (with Xvfb if necessary)
+        if [ '${{inputs.use_xvfb}}' = 'true' ]; then
+          echo "::group::Build (with Xvfb)"
+          xvfb-run -e /dev/stdout make -j2 ${{inputs.target}}
+          echo "::endgroup::"
+        else
+          echo "::group::Build"
+          make -j2 ${{inputs.target}}
+          echo "::endgroup::"
+        fi

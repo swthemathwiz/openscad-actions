@@ -1,0 +1,110 @@
+name: 'Update Media Artifacts'
+description: 'Update OpenSCAD media artifacts on a media branch'
+inputs:
+  message:
+    description: 'Commit Message'
+    type: string
+    required: true
+    default: 'Update media'
+  files:
+    description: 'List of extensions of media files'
+    type: string
+    required: false
+    default: 'png stl off amf 3mf dxf svg'
+  files_except:
+    description: 'Artifacts to delete before storing'
+    type: string
+    required: false
+    default: ''
+  media_branch:
+    description: 'Media repository branch'
+    type: string
+    required: true
+    default: 'media'
+  media_subdirectory:
+    description: 'Subdirectory that receives media files'
+    type: string
+    required: true
+    default: 'media'
+  media_create_subdirectory:
+    description: 'Create subdirectory if it does not exist'
+    type: boolean
+    required: false
+    default: true
+  dry_run:
+    description: 'Dry-run'
+    type: boolean
+    required: false
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Switch to Media Branch
+      uses: actions/checkout@v2
+      with:
+        ref: ${{inputs.media_branch}}
+        clean: false
+    - name: Checkin Media Artifacts to Media Branch
+      shell: bash
+      run : |
+        # Checkin Media Artifacts to Media Branch
+        read -a extensions <<< '${{inputs.files}}'
+        inclusions=()
+        exclusions=()
+        for ext in "${extensions[@]}";
+        do
+          inclusions+=( "*.$ext" )
+          exclusions+=( "-e" "*.$ext" )
+        done
+
+        # Cleanup everything except the (possibly new) media files
+        echo git clean -ffdx "${exclusions[@]}"
+        git clean -ffdx "${exclusions[@]}"
+
+        # Remove any excepted files
+        if [ '${{inputs.files_except}}' != '' ]; then
+          shopt -s nullglob
+          for file in ${{inputs.files_except}};
+          do
+            rm -v -f "$file"
+          done
+          shopt -u nullglob
+        fi
+
+        # Create the media subdirectory if is does not exist
+        if [ '${{inputs.media_create_subdirectory}}' = 'true' ] && [ ! -d '${{inputs.media_subdirectory}}' ]; then
+          mkdir -p -v '${{inputs.media_subdirectory}}'
+        fi
+
+        # Move files to media subdirectory
+        if [ '${{inputs.media_subdirectory}}' != '.' ]; then
+          shopt -s nullglob
+          for file in ${inclusions[@]};
+          do
+            mv -v "$file" '${{inputs.media_subdirectory}}'/
+          done
+          shopt -u nullglob
+        fi
+
+        # Informational output
+        git status --short
+
+        # Checkin any files
+        if [ -z "$(git status --porcelain)" ]; then 
+          # Working directory clean
+          echo "Media artifacts are up to date"
+        else 
+          # Checkin all uncommitted changes
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add '${{inputs.media_subdirectory}}'
+          git commit -m '${{ inputs.message }}'
+          if [ '${{ inputs.dry_run}}' = 'true' ]; then
+            git push --dry-run origin media:media
+            echo "Media artifacts would have been updated (dry-run)"
+          else
+            git push origin media:media
+            echo "Media artifacts updated"
+          fi
+        fi
