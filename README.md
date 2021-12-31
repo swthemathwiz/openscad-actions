@@ -31,7 +31,7 @@ Combine the two actions to update media icons, images, and stl. This uses the ta
 option of the **build** action to make special targets and then uses the **update-media-artifacts**
 action to check-in those files:
 
-```yml
+```yaml
   name: 'Update Media'
 
   on:
@@ -58,7 +58,7 @@ Combine a version tag/push trigger with the **build** action to create a github
 release (using action [softprops/action-gh-release](https://github.com/softprops/action-gh-release))
 that includes the STL files: 
 
-```yml
+```yaml
   name: 'Release with STLs'
 
   on:
