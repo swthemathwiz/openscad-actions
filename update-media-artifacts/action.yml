@@ -36,6 +36,16 @@ inputs:
     type: boolean
     required: false
     default: false
+  user_name:
+    description: 'User name'
+    type: string
+    required: true
+    default: 'github-actions'
+  user_email:
+    description: 'User email'
+    type: string
+    required: true
+    default: 'github-actions@github.com'
 
 runs:
   using: "composite"
@@ -78,7 +88,7 @@ runs:
         fi
 
         # Move files to media subdirectory
-        if [ '${{inputs.media_subdirectory}}' != '.' ]; then
+        if [[ ! '${{inputs.media_subdirectory}}' -ef '.' ]]; then
           shopt -s nullglob
           for file in ${inclusions[@]};
           do
@@ -96,8 +106,8 @@ runs:
           echo "Media artifacts are up to date"
         else 
           # Checkin all uncommitted changes
-          git config user.name github-actions
-          git config user.email github-actions@github.com
+          git config user.name '${{ inputs.user_name }}'
+          git config user.email '${{ inputs.user_email }}'
           git add '${{inputs.media_subdirectory}}'
           git commit -m '${{ inputs.message }}'
           if [ '${{ inputs.dry_run}}' = 'true' ]; then

@@ -101,3 +101,5 @@ The parameters of the **update-media-artifacts** action are:
 | media\_subdirectory         | string  | 'media'                       | Subdirectory to which all files are moved                   |
 | media\_create\_subdirectory | boolean | true                          | Create the media subdirectory if it doesn't exist           |
 | dry\_run                    | boolean | false                         | Do everything but use --dry-run on the final push           |
+| user\_name                  | string  | 'github-actions'              | User name used when committing artifacts                    |
+| user\_email                 | string  | 'github-actions@github.com'   | Email address used when committing artifacts                |
