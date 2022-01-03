@@ -24,8 +24,8 @@ runs:
       shell: bash
       run: |
         # Check non-empty target if requested
-        if [ '${{inputs.check_target}}' = 'true' ]; then
-          read -a target <<< '${{inputs.target}}'
+        if [ '${{ inputs.check_target }}' = 'true' ]; then
+          read -a target <<< '${{ inputs.target }}'
           if [ ${#target[@]} -eq 0 ]; then
             echo "::error ::No build target specified"
             exit 1
@@ -38,7 +38,7 @@ runs:
       run: |
         # Run apt-get to install OpenSCAD and Xvfb packages
         echo "::group::Install"
-        if [ '${{inputs.use_xvfb}}' = 'true' ]; then
+        if [ '${{ inputs.use_xvfb }}' = 'true' ]; then
           sudo apt-get install openscad xvfb
         else
           sudo apt-get install openscad
@@ -54,13 +54,13 @@ runs:
     - name: Build OpenSCAD
       shell: bash
       run: |
-        # Run make (with Xvfb if necessary)
-        if [ '${{inputs.use_xvfb}}' = 'true' ]; then
+        # Run make ${{ inputs.target }} (with Xvfb if necessary)
+        if [ '${{ inputs.use_xvfb }}' = 'true' ]; then
           echo "::group::Build (with Xvfb)"
-          xvfb-run -e /dev/stdout make -j2 ${{inputs.target}}
+          xvfb-run -e /dev/stdout make -j2 ${{ inputs.target }}
           echo "::endgroup::"
         else
           echo "::group::Build"
-          make -j2 ${{inputs.target}}
+          make -j2 ${{ inputs.target }}
           echo "::endgroup::"
         fi

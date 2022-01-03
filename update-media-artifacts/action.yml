@@ -53,13 +53,13 @@ runs:
     - name: Switch to Media Branch
       uses: actions/checkout@v2
       with:
-        ref: ${{inputs.media_branch}}
+        ref: ${{ inputs.media_branch }}
         clean: false
     - name: Checkin Media Artifacts to Media Branch
       shell: bash
       run : |
         # Checkin Media Artifacts to Media Branch
-        read -a extensions <<< '${{inputs.files}}'
+        read -a extensions <<< '${{ inputs.files }}'
         inclusions=()
         exclusions=()
         for ext in "${extensions[@]}";
@@ -73,9 +73,9 @@ runs:
         git clean -ffdx "${exclusions[@]}"
 
         # Remove any excepted files
-        if [ '${{inputs.files_except}}' != '' ]; then
+        if [ '${{ inputs.files_except }}' != '' ]; then
           shopt -s nullglob
-          for file in ${{inputs.files_except}};
+          for file in ${{ inputs.files_except }};
           do
             rm -v -f "$file"
           done
@@ -83,16 +83,16 @@ runs:
         fi
 
         # Create the media subdirectory if is does not exist
-        if [ '${{inputs.media_create_subdirectory}}' = 'true' ] && [ ! -d '${{inputs.media_subdirectory}}' ]; then
-          mkdir -p -v '${{inputs.media_subdirectory}}'
+        if [ '${{ inputs.media_create_subdirectory }}' = 'true' ] && [ ! -d '${{ inputs.media_subdirectory }}' ]; then
+          mkdir -p -v '${{ inputs.media_subdirectory }}'
         fi
 
         # Move files to media subdirectory
-        if [[ ! '${{inputs.media_subdirectory}}' -ef '.' ]]; then
+        if [[ ! '${{ inputs.media_subdirectory }}' -ef '.' ]]; then
           shopt -s nullglob
           for file in ${inclusions[@]};
           do
-            mv -v "$file" '${{inputs.media_subdirectory}}'/
+            mv -v "$file" '${{ inputs.media_subdirectory }}'/
           done
           shopt -u nullglob
         fi
@@ -101,16 +101,16 @@ runs:
         git status --short
 
         # Checkin any files
-        if [ -z "$(git status --porcelain)" ]; then 
+        if [ -z "$(git status --porcelain)" ]; then
           # Working directory clean
           echo "Media artifacts are up to date"
-        else 
+        else
           # Checkin all uncommitted changes
           git config user.name '${{ inputs.user_name }}'
           git config user.email '${{ inputs.user_email }}'
-          git add '${{inputs.media_subdirectory}}'
+          git add '${{ inputs.media_subdirectory }}'
           git commit -m '${{ inputs.message }}'
-          if [ '${{ inputs.dry_run}}' = 'true' ]; then
+          if [ '${{ inputs.dry_run }}' = 'true' ]; then
             git push --dry-run origin media:media
             echo "Media artifacts would have been updated (dry-run)"
           else
