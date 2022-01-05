@@ -11,6 +11,11 @@ inputs:
     type: boolean
     required: false
     default: false
+  extra_packages:
+    description: 'Install extra packages'
+    type: string
+    required: false
+    default: ''
   use_xvfb:
     description: 'Build under Xvfb'
     type: boolean
@@ -36,12 +41,12 @@ runs:
     - name: Install OpenSCAD and Xvfb
       shell: bash
       run: |
-        # Run apt-get to install OpenSCAD and Xvfb packages
+        # Use apt-get to install OpenSCAD and extra packages
         echo "::group::Install"
         if [ '${{ inputs.use_xvfb }}' = 'true' ]; then
-          sudo apt-get install openscad xvfb
+          sudo apt-get install openscad xvfb ${{ inputs.extra_packages }}
         else
-          sudo apt-get install openscad
+          sudo apt-get install openscad ${{ inputs.extra_packages }}
         fi
         echo "::endgroup::"
     - name: OpenSCAD Version

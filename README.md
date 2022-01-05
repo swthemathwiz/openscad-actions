@@ -88,6 +88,7 @@ The parameters of the **build** action are:
 | ------------------------- | ------- | -------------- | -------------------------------------------------------------- |
 | targets                   | string  | 'all'          | Build target(s) used for the 'make' command                    |
 | check\_targets            | boolean | false          | Check if the _targets_ string is empty and fail if so          |
+| extra\_packages           | string  | ''             | List of extra packages to install                              |
 | use\_xvfb                 | boolean | false          | Run the build under Xvfb                                       |
 
 The parameters of the **update-media-artifacts** action are:
