@@ -11,7 +11,7 @@ of Xvfb. An X server is necessary for OpenSCAD to capture images. So, roughly, t
 action is:
 
   - *Checkout source* &rarr;
-  - *Install OpenSCAD and optionally Xvfb* &rarr;
+  - *Install OpenSCAD, optionally Xvfb, and any extra packages* &rarr;
   - *Build with make (targets) optionally under Xvfb (xvfb-run)*
 
 The **update-media-artifacts** is built on the idea of using an orphan branch of a repository
