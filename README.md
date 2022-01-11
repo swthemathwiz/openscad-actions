@@ -60,9 +60,9 @@ The parameters of the **update-media-artifacts** action are:
 
 ### annotate-models 
 
-The **annotate-models** action is a very specialized used to expand content
+The **annotate-models** action is a very specialized action used to expand content
 within a markdown file. It adds links to STL and image files.
-So the **annotate-models** action is:
+The **annotate-models** action is:
 
   - *For each file to expand* &rarr;
   - *Search the file for special \<div class="model" ...\> HTML tags* &rarr;
