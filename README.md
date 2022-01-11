@@ -2,7 +2,7 @@
 
 ## Introduction
 
-There are two actions:
+There are three actions:
 
   - **build**: Builds [OpenSCAD](https://openscad.org) models and images from a git
     repository using make.
