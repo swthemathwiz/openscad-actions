@@ -89,7 +89,7 @@ The simple markdown/HTML combination:
 ```html
   <div class="model" data-name="Thing" data-left="examples/thing.stl" data-left-icon="examples/thing.icon.png" data-right="examples/thing.full.png">
 
-    *THIS* is a _thing_ (with markdown highlighting expanded)
+    **THIS** is a _thing_ (with markdown highlighting expanded)
 
   </div>
 ```
@@ -97,7 +97,7 @@ can be expanded to a centered 3-cell table that looks like this:
 
 <div class="model" data-name="Thing" data-left="examples/thing.stl" data-left-icon="examples/thing.icon.png" data-right="examples/thing.full.png"><!-- expanded by annotate-model --><table align="center" width="100%"><tbody><tr width="100%"><td align="center" width="128" height="128"><a href="examples/thing.stl" target="_blank" title="View Thing Model"><img src="examples/thing.icon.png" alt="Thing Model" width="96" height="96" /></a></td><td>
 
-  *THIS* is a _thing_ (with markdown highlighting expanded)
+  **THIS** is a _thing_ (with markdown highlighting expanded)
 
 </td><td align="center" width="128" height="128"><a href="examples/thing.full.png" target="_blank" title="View Thing Installed"><img src="examples/thing.full.png" alt="Thing Installed" width="96" height="96" /></a></td></tr></tbody></table></div>
 
