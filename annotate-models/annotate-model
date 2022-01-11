@@ -1,0 +1,516 @@
+#!/usr/bin/perl
+#
+# Copyright (c) Stewart Whitman, 2022.
+#
+# File:    annotate-model
+# Project: OpenSCAD Actions
+# License: Unlicense <see https://unlicense.org/>
+# Desc:    Expands model tags in markdown files
+#
+
+# Long Description:
+#
+#    1. Takes unexpanded model div:
+#
+#         <div class="model" ...special attributes.../>
+#
+#       Or:
+#
+#         <div class="model" ...special attributes.../>
+#
+#         Lines of markdown
+#
+#         </div>
+#
+#       N.B.: div tags must appear at beginning of line and must be followed by exact class
+#
+#    2. Creates expanded with table containing images, links, and description:
+#
+#         <div class="model" ...special attributes...>...replaceable expanded content...
+#
+#         Lines of markdown
+#
+#         ...replaceable expanded content...</div>
+#
+#  The special attributes are:
+#   General: 
+#    data-name      => Name of model (used in alt text, tips, etc.)
+#
+#   Layout:
+#    data-icon-size    => Icon size (default 96)
+#    data-desc-width   => Description width - number or auto (default auto)
+#    data-cell-padding => Margin around cells (default 16 - imposed externally)
+#
+#   Icon Content:
+#    data-left       => Left link
+#    data-left-icon  => Icon image for left link (optional, will use link resized)
+#    data-left-desc  => Name for left link (optional, default '<data-name> Model')
+#
+#    data-right      => Right link
+#    data-right-icon => Icon Image for right link (optional, will use image resized)
+#    data-right-desc => Name for right link (optional, default '<data-name> Installed')
+#
+
+use warnings;
+use Getopt::Long;
+use File::Basename;
+use XML::LibXML;
+use Scalar::Util qw(looks_like_number);
+use vars qw/$PROGRAM $HELP $VERBOSE $DEBUG $NOBACKUP $CLASSNAME $REVERSE $LINK_PATH $IMAGE_PATH $PREAMBLE $POSTAMBLE/;
+use strict;
+
+use constant TRUE => 1;
+use constant FALSE => 0;
+use constant BAK_EXTENSION => '.bak';
+use constant CLASSNAME_DEFAULT => 'model';
+
+sub process_link($);
+sub process_directory($);
+sub process_file($);
+sub error($);
+sub warning($);
+
+$PROGRAM   = basename( $0 );
+$PREAMBLE  = "<!-- expanded by $PROGRAM -->";
+$POSTAMBLE = "";
+
+#
+#  Option Syntax
+#
+#   -d = debug
+#   -h = help
+#   -v = verbose
+#   -n = no-backup
+#
+#   -c = class
+#   -r = reverse
+#   -i = image_path
+#   -l = link_path
+#
+
+$DEBUG      = 0;
+$HELP       = FALSE;
+$VERBOSE    = 0;
+$NOBACKUP   = FALSE;
+$CLASSNAME  = CLASSNAME_DEFAULT;
+$REVERSE    = FALSE;
+$LINK_PATH  = undef;
+$IMAGE_PATH = undef;
+if( !GetOptions( "-debug+", \$DEBUG, "-help", \$HELP, "-verbose+", \$VERBOSE, "-no-backup", \$NOBACKUP, "-class=s", \$CLASSNAME, "-reverse", \$REVERSE, "-image-path=s", \$IMAGE_PATH, "-link-path=s", \$LINK_PATH ) ) {
+  exit( 1 );
+}
+
+#
+# If help option specified
+#
+if( $HELP ) {
+  print STDERR "`$PROGRAM' is a file processor that expands <div class=\"$CLASSNAME\"> tags.\n\n";
+  print STDERR "Usage: $PROGRAM [OPTION]... [FILES]...\n\n";
+  print STDERR " Processing Options:\n";
+  print STDERR "  -c, --class <string>       specify class of <div> tag to expand (default " . CLASSNAME_DEFAULT . ")\n";
+  print STDERR "  -i, --image-path <string>  qualify URL of images (default none)\n";
+  print STDERR "  -l, --link-path <string>   qualify URL of links (default none)\n";
+  print STDERR "  -r, --reverse              reverse the expansion\n";
+  print STDERR " Output Options:\n";
+  print STDERR "  -n, --no-backup            remove backup after processing\n";
+  print STDERR "  -d, --debug                output some debug information\n";
+  print STDERR "  -h, --help                 print this output, then exit\n";
+  print STDERR "  -v, --verbose              output verbose output\n";
+  exit 1;
+}
+
+#
+# Check class
+#
+error( "tag ($CLASSNAME) is no a valid class name" ) if !( $CLASSNAME =~ /^\w+$/ );
+
+#
+# If no input files, error
+#
+if( scalar(@ARGV) < 1 ) {
+  error( "no files specified" );
+}
+
+#
+# Do each file
+#
+foreach my $file ( @ARGV ) {
+  if( ! -e $file ) {
+    error( "`$file': $!" );
+  }
+  elsif( -l $file ) {
+    process_link( $file );
+  }
+  elsif( -d $file ) {
+    process_directory( $file );
+  }
+  elsif( -f $file ) {
+    process_file( $file );
+  }
+  else {
+    warning( "`$file' is not a file, directory, or link" );
+  }
+}
+
+exit 0;
+
+# process_link:
+#
+# Process a link.
+#
+sub process_link($)
+{
+  my($file) = @_;
+  warning( "ignoring symbolic link `$file'" );
+} # end process_link
+
+# process_directory:
+#
+# Process a directory.
+#
+sub process_directory($)
+{
+  my($file) = @_;
+  warning( "ignoring directory `$file'" );
+} # end process_directory
+
+# error_restore:
+#
+# Restore backup to file and issue error message
+#
+sub error_restore($$$)
+{
+  my( $file, $backup_file, $message ) = @_;
+  rename( $backup_file, $file );
+  error( $message );
+} # end error_restore
+
+# expand:
+#
+# Expand a tag given the parameters
+#
+sub expand($$)
+{
+  our ($tag_content, $tag_description)  = @_;
+
+  sub clean_description($)
+  {
+    my $s = shift;
+    $s =~ s/^[ \t]*\n// while( $s =~ /^[ \t]*\n/ );
+    $s =~ s/[ \t]*\n$// while( $s =~ /[ \t]*\n$/ );
+    return $s;
+  }
+  $tag_description = "\n" . clean_description($tag_description) . "\n";
+
+  # Make a comment out of a XML/HTML tag
+  sub tag_to_comment($)
+  {
+    my $s = shift;
+    $s =~ s/^</<!--/;
+    $s =~ s/>$/-->/;
+    return $s;
+  }
+  sub tag_to_opener($)
+  {
+    my $s = shift;
+    $s =~ s/\/?>$/>/;
+    return $s;
+  }
+  sub tag_to_closer($)
+  {
+    my $s = shift;
+    $s =~ s/^<(\w+)\b.*$/<\/$1>/;
+    return $s . "\n";
+  }
+  sub qualify_url($$)
+  {
+    my ( $path, $file ) = @_;
+    return defined($file) && defined($path) && $path ne '' ? $path . '/' . $file : $file;
+  }
+
+  print STDERR "$PROGRAM: tag: $tag_content\n" if $VERBOSE > 0;
+
+  my $dom = eval {
+      XML::LibXML->load_xml(string => $tag_content);
+  };
+  return undef if($@);
+
+  local $_ = '';
+  for my $model ( $dom->findnodes("/div") ) {
+    my $tag_as_string = "$model";
+
+    if( $REVERSE ) {
+      if( $tag_description =~ /^\s*$/ ) {
+	$_ .= $tag_as_string . "\n";
+      }
+      else {
+	$_ .= tag_to_opener($tag_as_string) . "\n" . $tag_description . "\n" . tag_to_closer($tag_as_string);
+      }
+    }
+    else {
+      my $name         = $model->getAttribute( 'data-name' ) || 'unknown';
+      my $icon_size    = $model->getAttribute( 'data-icon-size' );
+      my $desc_width   = $model->getAttribute( 'data-desc-width' );
+      my $cell_padding = $model->getAttribute( 'data-cell-padding' );
+      my $left         = qualify_url( $LINK_PATH, $model->getAttribute( 'data-left' ) );
+      my $left_icon    = qualify_url( $IMAGE_PATH, $model->getAttribute( 'data-left-icon' ) );
+      my $left_desc    = $model->getAttribute( 'data-left-desc' ) || "$name Model";
+      my $right        = qualify_url( $LINK_PATH, $model->getAttribute( 'data-right' ) );
+      my $right_icon   = qualify_url( $IMAGE_PATH, $model->getAttribute( 'data-right-icon' ) );
+      my $right_desc   = $model->getAttribute( 'data-right-desc' )|| "$name Installed";
+
+      #print "| $name | $left | $icon | $right | $icon_size";
+
+      sub force_int($$$$)
+      {
+        my ( $value, $max, $min, $default ) = @_;
+        $value = $default if !looks_like_number($value);
+        $value = int($value);
+        $value = $max if $value > $max;
+        $value = $min if $value < $min;
+        return $value;
+      }
+
+      $icon_size    = force_int( $icon_size, 512, 0, 96 );
+      $cell_padding = force_int( $cell_padding, 64, 0, 16 );
+
+      my $icon_left,
+      my $icon_right;
+      my $icon_count = 0;
+      {
+	sub make_icon($$$$)
+	{
+	  my ( $size, $link, $icon, $desc ) = @_;
+          return undef if $size <= 0;
+          my $tip = 'View ' . $desc;
+	  #Markdown: $link_stl = "[![$desc]($icon)]($link \"$tip\")";
+          # With link...
+	  return "<a href=\"$link\" target=\"_blank\" title=\"$tip\"><img src=\"$icon\" alt=\"$desc\" width=\"$size\" height=\"$size\" /></a>" if defined($link);
+          # Just image...
+	  return "<img src=\"$icon\" alt=\"$desc\" width=\"$size\" height=\"$size\" />";
+	}
+
+        # Create the left icon with link
+	if( defined($left) || defined($left_icon) ) {
+	  $icon_left = make_icon( $icon_size, $left, defined($left_icon) ? $left_icon : $left, $left_desc );
+	  $icon_count++ if defined($icon_left);
+	}
+
+        # Create the right icon with link
+	if( defined($right) || defined($right_icon) ) {
+	  $icon_right = make_icon( $icon_size, $right, defined($right_icon) ? $right_icon : $right, $right_desc );
+	  $icon_count++ if defined($icon_right);
+	}
+      }
+
+      # Is the text expandable? 
+      our $is_expandable_desc = !defined($desc_width) || !looks_like_number($desc_width) || lc($desc_width) eq 'auto' || int($desc_width) <= 0; 
+
+      # Set the image cell from the icon size
+      our $img_cell_size  = $icon_size ? 2*$cell_padding+$icon_size : 0;
+
+      # Set the description size from the page size - image cells # but, restrict to these reasonable ranges
+      our $desc_cell_size = $is_expandable_desc ? undef : force_int( 640 - $icon_count * $img_cell_size, 720, 240, 300 );
+
+      sub make_image_cell($)  { my $i = shift; return defined($i) ? '<td align="center" width="' . $img_cell_size .'" height="' . $img_cell_size . '">' . $i . '</td>' : ''; }
+      sub make_desc_cell($) { my $d = shift; return defined($d) ? '<td' . (defined($desc_cell_size) ? ' width="' . $desc_cell_size .'"' : '') . ">\n" . $d . "\n</td>" : ''; }
+
+      my $row_size = $is_expandable_desc ? "100%" : $desc_cell_size + $icon_count * $img_cell_size;
+
+      # This is our HTML expansion
+      $_ .= tag_to_opener($tag_as_string) .
+              $PREAMBLE .
+                "<table align=\"center\" width=\"$row_size\">" .
+                  "<tbody>" .
+		    "<tr width=\"$row_size\">" .
+                      make_image_cell( $icon_left ) .  make_desc_cell( $tag_description ) . make_image_cell( $icon_right ) .
+                    "</tr>" .
+                  "</tbody>" .
+                "</table>" .
+              $POSTAMBLE .
+            tag_to_closer( $tag_as_string );
+    }
+  }
+
+  return $_;
+} # end expand
+
+# process_file:
+#
+# Process a file.
+#
+sub process_file($)
+{
+  my ($file)  = @_;
+  my $backup_file = $file . BAK_EXTENSION;
+
+  #
+  # Check to make sure the file is readable
+  #
+  error( "unable to read `$file'" ) if ! -r $file;
+
+  printf STDERR "$PROGRAM: file $file\n" if $VERBOSE;
+
+  #
+  # Rename file to backup
+  #
+  rename( $file, $backup_file ) or error( "unable to rename `$file' to `$backup_file': $!" );
+
+  #
+  # Open INPUT (backup) to OUTPUT (file)
+  #
+  open( OUTPUT, ">$file" )    or error_restore( $file, $backup_file, "unable to open `$file': $!" );
+  open( INPUT,  "<$backup_file" ) or error_restore( $file, $backup_file, "unable to open `$backup_file': $!" );
+
+  #
+  # Process INPUT to OUTPUT
+  #
+  my $lineno  = 1;
+  my $changes = FALSE;
+
+  use constant STATE_LOOKING_FOR_START => 0;
+  use constant STATE_LOOKING_FOR_END => 1;
+  use constant STATE_PROCESSING_TAG => 2;
+
+  my $state = STATE_LOOKING_FOR_START;
+  my $tag   = {};
+
+  my $originalFile = '';
+  my $modifiedFile = '';
+
+  while( <INPUT> ) {
+    $originalFile .= $_;
+
+    # Our restrictions are:
+    #  The line must contain ONLY the tag and it contents
+    #    - case sensitive tag
+    #    - surrounded by whitespace
+    #  The tag be either of the form:
+    #    1. Unexpanded:  <div class="tag" ...attributes.../>
+    #    2. Expanded:
+    #         <div class="tag" ...attributes...>...replaceable expanded content...
+    #
+    #         Lines of markdown (without div)
+    #
+    #         ...replaceable expanded content...</tag>
+    #
+
+    if( $state == STATE_LOOKING_FOR_START ) {
+      # 1. Unexpanded case... <div class="tag" ...attributes/>
+      if( /^<(div\s+class="$CLASSNAME"[^>]*)\/>(\s*)$/i ) {
+        $tag->{'tag'} = '<' . $1 . '/>';
+        $tag->{'desc'} = '';
+        $tag->{'line'} = $lineno;
+        $state = STATE_PROCESSING_TAG;
+      }
+      # 2. Expanded: <div class="tag" ...attributes...>...replaceable expanded content...
+      elsif( /^<(div\s+class="$CLASSNAME"[^>]*)>.*$/i ) {
+        $tag->{'tag'} = '<' . $1 . '/>';
+        $tag->{'desc'} = '';
+        $tag->{'line'} = $lineno;
+        $state = STATE_LOOKING_FOR_END;
+        $_ = '';
+      }
+    }
+    elsif( $state == STATE_LOOKING_FOR_END ) {
+      # 2. Expanded: ...replaceable expanded content...</tag>
+      if( /<\/\s*div\s*>(\s*)$/i ) {
+        $state = STATE_PROCESSING_TAG;
+      }
+      else {
+        $tag->{'desc'} .= $_;
+        $_ = '';
+      }
+    }
+
+    if( $state == STATE_PROCESSING_TAG ) {
+      my $expansion = expand( $tag->{'tag'}, $tag->{'desc'} );
+
+      # Handle error (message in $@)
+      if( !defined($expansion) ) {
+        my $message;
+	if (ref($@)) {
+	  # handle a structured error (XML::LibXML::Error object)
+          $message = $@->as_string();
+          $message =~ s/^/    /mg;
+          $message =~ s/^    :1: parser error : /  /mg;
+          $message =~ s/^$//mg;
+          print STDERR "$file($lineno):\n$message";
+          $message = "error parsing tag";
+        }
+        elsif ($@) {
+          # error, but not an XML::LibXML::Error object
+          $message = $@->as_string();
+        }
+        else {
+          # no error - should not occur
+          $message = 'unexpected error';
+        }
+	chomp( $message );
+	error_restore( $file, $backup_file, "$file($tag->{line}): $message" );
+      }
+
+      $_ = $expansion;
+      $state = STATE_LOOKING_FOR_START;
+    }
+
+    $modifiedFile .= $_;
+    print OUTPUT;
+    $lineno++;
+  }
+
+  # unclosed tag
+  if( $state != STATE_LOOKING_FOR_START ) {
+    error_restore( $file, $backup_file, "$file($tag->{line}): missing end of tag" );
+  }
+
+  # set variable 'changes' to TRUE if something is changed
+  $changes = $changes || ($originalFile ne $modifiedFile);
+
+  #
+  # Close Files
+  #
+  close( INPUT )  or error_restore( $file, $backup_file, "unable to close `$backup_file': $!" );
+  close( OUTPUT ) or error_restore( $file, $backup_file, "unable to close `$file': $!" );
+
+  #
+  # No changes made... simply restore original file
+  #
+  if( !$changes ) {
+    rename( $backup_file, $file ) or error( "unable to rename `$backup_file' to `$file': $!" );
+    warning( "no changes made to `$file'" );
+  }
+  #
+  # Fix permissions
+  #
+  else {
+    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size, $atime,$mtime,$ctime,$blksize,$blocks) = stat($backup_file);
+    chmod( $mode, $file )      or warning( "unable to chmod $mode $file: $!" );
+    chown( $uid, $gid, $file ) or warning( "unable to chown $uid:$gid $file: $!" );
+
+    if( $NOBACKUP ) {
+      unlink( $backup_file ) or error( "unable to unlink `$backup_file': $!" );
+    }
+  }
+} # end process_file
+
+# error:
+#
+# Issue an error message and exit.
+#
+sub error($)
+{
+  my($message) = @_;
+  print STDERR "$PROGRAM: error: $message\n";
+  exit 1;
+} # end error
+
+# warning:
+#
+# Issue a warning message.
+#
+sub warning($)
+{
+  my($message) = @_;
+  print STDERR "$PROGRAM: warning: $message\n";
+} # end warning

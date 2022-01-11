@@ -1,0 +1,84 @@
+name: 'Annotate Models'
+description: 'Embed HTML/Markdown associated with models in a file (typically README.md)'
+inputs:
+  file:
+    description: 'File'
+    type: string
+    required: true
+    default: 'README.md'
+  message:
+    description: 'Commit Message'
+    type: string
+    required: true
+    default: 'Expand models'
+  class_name:
+    description: 'Class attribute value to search for'
+    type: string
+    required: true
+    default: 'model'
+  link_path:
+    description: 'URI to linked URLs'
+    type: string
+    required: true
+    default: '../media/media'
+  image_path:
+    description: 'URI to image URLs'
+    type: string
+    required: true
+    default: '../media/media'
+  extra_parameters:
+    description: 'Extra parameters to annotator script'
+    type: string
+    required: false
+    default: ''
+  dry_run:
+    description: 'Dry-run'
+    type: boolean
+    required: false
+    default: false
+  user_name:
+    description: 'User name'
+    type: string
+    required: true
+    default: 'github-actions'
+  user_email:
+    description: 'User email'
+    type: string
+    required: true
+    default: 'github-actions@github.com'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Expand Models in ${{ inputs.file }}
+      shell: bash
+      run: |
+        # Expand ${{ inputs.file }} with <div class="${{ inputs.class_name }}"> tags
+        ${{ github.action_path }}/annotate-model '--class=${{ inputs.clasS_name }}' '--link-path=${{ inputs.link_path }}' '--image-path=${{ inputs.image_path }}' --no-backup ${{ inputs.extra_parameters }} '${{ inputs.file }}'
+    - name: Checkin
+      shell: bash
+      run : |
+        # Checkin ${{ inputs.file }} if changed
+
+        # Informational output
+        git status --short
+
+        # Checkin any files
+        if [ -z "$(git status --porcelain '${{ inputs.file }}')" ]; then
+          # Working directory clean
+          echo "No changes to ${{ inputs.file }}"
+        else
+          # Checkin all uncommitted changes
+          git config user.name '${{ inputs.user_name }}'
+          git config user.email '${{ inputs.user_email }}'
+          git commit -m '${{ inputs.message }}' '${{ inputs.file }}'
+          if [ '${{ inputs.dry_run }}' = 'true' ]; then
+            git push --dry-run
+            echo '${{ inputs.file }} would have been updated (dry-run)'
+          else
+            git push
+            echo '${{ inputs.file }} updated'
+          fi
+        fi
