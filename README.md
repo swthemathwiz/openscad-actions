@@ -185,14 +185,14 @@ README.md file whenever it is pushed:
   on:
     push:
       paths:
-	- 'README.md'
+        - 'README.md'
 
   jobs:
     build:
       runs-on: ubuntu-latest
       steps:
       - name: Annotate README.md
-	uses: swthemathwiz/openscad/annotate-models@v1
-	with:
-	  file: 'README.md'
+        uses: swthemathwiz/openscad/annotate-models@v1
+        with:
+          file: 'README.md'
 ```
