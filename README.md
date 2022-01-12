@@ -20,16 +20,17 @@ action is:
 
   - *Checkout source* &rarr;
   - *Install OpenSCAD, optionally Xvfb, and any extra packages* &rarr;
-  - *Build with make (targets) optionally under Xvfb (xvfb-run)*
+  - *Build with "<command> <targets>" optionally under Xvfb (xvfb-run)*
 
 The parameters of the **build** action are:
 
-| Name                      | Type    | Default        | Description                                                    |
-| ------------------------- | ------- | -------------- | -------------------------------------------------------------- |
-| targets                   | string  | 'all'          | Build target(s) used for the 'make' command                    |
-| check\_targets            | boolean | false          | Check if the _targets_ string is empty and fail if so          |
-| extra\_packages           | string  | ''             | List of extra packages to install                              |
-| use\_xvfb                 | boolean | false          | Run the build under Xvfb                                       |
+| Name                      | Type    | Default            | Description                                            |
+| ------------------------- | ------- | ------------------ | ------------------------------------------------------ |
+| targets                   | string  | 'all'              | Build target(s) supplied to the command                |
+| command                   | string  | 'make -j $(nproc)' | Build command itself                                   |
+| extra\_packages           | string  | ''                 | List of extra packages to install                      |
+| use\_xvfb                 | boolean | false              | Run the build under Xvfb                               |
+| check\_targets            | boolean | false              | Check if the _targets_ string is empty and fail if so  |
 
 ### update-media-artifacts
 

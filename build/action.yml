@@ -2,15 +2,15 @@ name: 'Build OpenSCAD'
 description: 'Build OpenSCAD models and images'
 inputs:
   target:
-    description: 'Make target(s)'
+    description: 'Build target(s)'
     type: string
     required: false
     default: 'all'
-  check_target:
-    description: 'Check for empty target'
-    type: boolean
-    required: false
-    default: false
+  command:
+    description: 'Command for building'
+    type: string
+    required: true
+    default: 'make -j $(nproc)'
   extra_packages:
     description: 'Install extra packages'
     type: string
@@ -18,6 +18,11 @@ inputs:
     default: ''
   use_xvfb:
     description: 'Build under Xvfb'
+    type: boolean
+    required: false
+    default: false
+  check_target:
+    description: 'Check for empty target'
     type: boolean
     required: false
     default: false
@@ -59,13 +64,13 @@ runs:
     - name: Build OpenSCAD
       shell: bash
       run: |
-        # Run make ${{ inputs.target }} (with Xvfb if necessary)
+        # Run ${{ inputs.command }} ${{ inputs.target }} (with Xvfb if necessary)
         if [ '${{ inputs.use_xvfb }}' = 'true' ]; then
           echo "::group::Build (with Xvfb)"
-          xvfb-run -e /dev/stdout make -j2 ${{ inputs.target }}
+          xvfb-run -e /dev/stdout ${{ inputs.command }} ${{ inputs.target }}
           echo "::endgroup::"
         else
           echo "::group::Build"
-          make -j2 ${{ inputs.target }}
+          ${{ inputs.command }} ${{ inputs.target }}
           echo "::endgroup::"
         fi
