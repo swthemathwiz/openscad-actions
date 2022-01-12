@@ -4,22 +4,22 @@
 
 There are three actions:
 
-  - **build**: Builds [OpenSCAD](https://openscad.org) models and images from a git
-    repository using make.
-  - **update-media-artifacts**: Checks-in the artifacts (STLs, images, etc..) to an
-    orphan "media" branch of a git repository.
+  - **build**: Builds [OpenSCAD](https://openscad.org) models and images from a
+    git repository using make.
+  - **update-media-artifacts**: Checks-in the artifacts (STLs, images, etc..) to
+    an orphan "media" branch of a git repository.
   - **annotate-models**: Expands special model-related tags in markdown files.
 
 ## Actions
 
 ### build
 
-The **build** action is straight forward with the only real "trick" being an option the use
-of Xvfb. An X server is necessary for OpenSCAD to capture images. So, roughly, the **build**
-action is:
+The **build** action is straight forward with the only real "trick" being an
+option the use of Xvfb. An X server is necessary for OpenSCAD to capture images.
+So, roughly, the **build** action is:
 
-  - *Checkout source* &rarr;
-  - *Install OpenSCAD, optionally Xvfb, and any extra packages* &rarr;
+  - *Checkout source* →
+  - *Install OpenSCAD, optionally Xvfb, and any extra packages* →
   - *Build with "<command> <targets>" optionally under Xvfb (xvfb-run)*
 
 The parameters of the **build** action are:
@@ -34,15 +34,16 @@ The parameters of the **build** action are:
 
 ### update-media-artifacts
 
-The **update-media-artifacts** action is built on the idea of using an orphan branch of a repository
-to store images and other built artifacts (described [here](https://medium.com/@minamimunakata/how-to-store-images-for-use-in-readme-md-on-github-9fb54256e951)).
+The **update-media-artifacts** action is built on the idea of using an orphan
+branch of a repository to store images and other built artifacts (described
+[here](https://medium.com/@minamimunakata/how-to-store-images-for-use-in-readme-md-on-github-9fb54256e951)).
 In addition to the separate branch, the action allows the built artifacts to be
 moved into a separate subdirectory. So the **update-media-artifacts** action is:
 
-  - *Switch to media branch, leaving built artifacts (i.e. checkout with no clean)* &rarr;
-  - *Remove everything except built artifacts matching specified extensions* &rarr;
-  - *Remove everything any addition artifacts (optional)* &rarr;
-  - *Move all artifacts to a separate subdirectory (optional)* &rarr;
+  - *Switch to media branch, leaving built artifacts (i.e. checkout with no clean)* →
+  - *Remove everything except built artifacts matching specified extensions* →
+  - *Remove everything any addition artifacts (optional)* →
+  - *Move all artifacts to a separate subdirectory (optional)* →
   - *Checkin the artifacts*
 
 The parameters of the **update-media-artifacts** action are:
@@ -61,16 +62,16 @@ The parameters of the **update-media-artifacts** action are:
 
 ### annotate-models 
 
-The **annotate-models** action is a very specialized action used to expand content
-within a markdown file. It adds links to STL and image files.
-The **annotate-models** action is:
+The **annotate-models** action is a very specialized action used to expand
+content within a markdown file. It adds links to STL and image files. The
+**annotate-models** action is:
 
-  - *For each file to expand* &rarr;
-  - *Search the file for special \<div class="model" ...\> HTML tags* &rarr;
-  - *Expand the contents of the special \<div\> tags* &rarr;
+  - *For each file to expand* →
+  - *Search the file for special \<div class="model" ...\> HTML tags* →
+  - *Expand the contents of the special \<div\> tags* →
   - *Checkin the file if changed*
 
-The _magic_ is that the special _div_ tags can have the following special
+The *magic* is that the special *div* tags can have the following special
 attributes that are expanded to HTML tables. The attributes are:
 
 | Attribute         | Value                                                             |
@@ -90,7 +91,7 @@ The simple markdown/HTML combination:
 ```html
   <div class="model" data-name="Thing" data-left="examples/thing.stl" data-left-icon="examples/thing.icon.png" data-right="examples/thing.full.png">
 
-    **THIS** is a _thing_ (with markdown highlighting expanded)
+    **THIS** is a *thing* (with markdown highlighting expanded)
 
   </div>
 ```
@@ -98,7 +99,7 @@ can be expanded to a centered 3-cell table that looks like this:
 
 <div class="model" data-name="Thing" data-left="examples/thing.stl" data-left-icon="examples/thing.icon.png" data-right="examples/thing.full.png"><!-- expanded by annotate-model --><table align="center" width="100%"><tbody><tr width="100%"><td align="center" width="128" height="128"><a href="examples/thing.stl" target="_blank" title="View Thing Model"><img src="examples/thing.icon.png" alt="Thing Model" width="96" height="96" /></a></td><td>
 
-  **THIS** is a _thing_ (with markdown highlighting expanded)
+**THIS** is a *thing* (with markdown highlighting expanded)
 
 </td><td align="center" width="128" height="128"><a href="examples/thing.full.png" target="_blank" title="View Thing Installed"><img src="examples/thing.full.png" alt="Thing Installed" width="96" height="96" /></a></td></tr></tbody></table></div>
 
@@ -120,9 +121,9 @@ The parameters of the **annotate-models** action are:
 
 ### Update Media
 
-Combines two actions to update media icons, images, and STL. This uses the target
-option of the **build** action to make special targets and then uses
-the **update-media-artifacts** action to check-in those files:
+Combines two actions to update media icons, images, and STL. This uses the
+target option of the **build** action to make special targets and then uses the
+**update-media-artifacts** action to check-in those files:
 
 ```yaml
   name: 'Update Media'
