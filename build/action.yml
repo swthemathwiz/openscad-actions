@@ -26,6 +26,11 @@ inputs:
     type: boolean
     required: false
     default: false
+  local_libraries:
+    description: 'Setup local libraries'
+    type: boolean
+    required: false
+    default: false
 
 runs:
   using: "composite"
@@ -60,6 +65,15 @@ runs:
         # Show the OpenSCAD Version
         echo "::group::OpenSCAD Version"
         openscad --version
+        echo "::endgroup::"
+    - name: Install Local Libraries
+      if:  ${{ inputs.local_libraries }}
+      shell: bash
+      run: |
+        # Install local libraries
+        echo "::group::Local Libraries"
+        ${{ inputs.command }} local-libraries
+        echo "OPENSCADPATH=./libraries" >> $GITHUB_ENV
         echo "::endgroup::"
     - name: Build OpenSCAD
       shell: bash

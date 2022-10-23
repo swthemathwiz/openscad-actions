@@ -31,6 +31,7 @@ The parameters of the **build** action are:
 | extra\_packages           | string  | ''                 | List of extra packages to install                      |
 | use\_xvfb                 | boolean | false              | Run the build under Xvfb                               |
 | check\_targets            | boolean | false              | Check if the _targets_ string is empty and fail if so  |
+| local\_libraries          | boolean | false              | Build target local-libraries and set OPENSCADPATH env  |
 
 ### update-media-artifacts
 
