@@ -51,7 +51,7 @@ runs:
   using: "composite"
   steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Expand Models in ${{ inputs.file }}
       shell: bash
       run: |
