@@ -36,15 +36,14 @@ runs:
   using: "composite"
   steps:
     - name: Check for Empty Target
+      if: inputs.check_target == 'true'
       shell: bash
       run: |
         # Check non-empty target if requested
-        if [ '${{ inputs.check_target }}' = 'true' ]; then
-          read -a target <<< '${{ inputs.target }}'
-          if [ ${#target[@]} -eq 0 ]; then
-            echo "::error ::No build target specified"
-            exit 1
-          fi
+        read -a target <<< '${{ inputs.target }}'
+        if [ ${#target[@]} -eq 0 ]; then
+          echo "::error ::No build target specified"
+          exit 1
         fi
     - name: Checkout
       uses: actions/checkout@v3
@@ -67,7 +66,7 @@ runs:
         openscad --version
         echo "::endgroup::"
     - name: Install Local Libraries
-      if:  ${{ inputs.local_libraries }}
+      if: inputs.local_libraries == 'true'
       shell: bash
       run: |
         # Install local libraries
