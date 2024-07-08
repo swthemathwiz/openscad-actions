@@ -170,7 +170,7 @@ that includes built STL files:
       - name: Build
         uses: swthemathwiz/openscad-action/build@v1
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body: New Release
           files: '*.stl'
