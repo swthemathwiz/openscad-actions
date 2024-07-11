@@ -20,7 +20,8 @@ So, roughly, the **build** action is:
 
   - *Checkout source* →
   - *Install OpenSCAD, optionally Xvfb, and any extra packages* →
-  - *Build with "<command> <targets>" optionally under Xvfb (xvfb-run)*
+  - *Optionally, run "\<command\> local-libraries" to setup model libraries* →
+  - *Build with "\<command\> \<targets\>" optionally under Xvfb (xvfb-run)*
 
 The parameters of the **build** action are:
 
