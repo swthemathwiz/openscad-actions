@@ -22,9 +22,9 @@
 #
 #         </div>
 #
-#       N.B.: div tags must appear at beginning of line and must be followed by exact class
+#       N.B.: div tags must appear at the beginning of a line and must be followed by the exact class
 #
-#    2. Creates expanded with table containing images, links, and description:
+#    2. Creates expanded output with a table containing images, links, and description:
 #
 #         <div class="model" ...special attributes...>...replaceable expanded content...
 #
@@ -33,7 +33,7 @@
 #         ...replaceable expanded content...</div>
 #
 #  The special attributes are:
-#   General: 
+#   General:
 #    data-name      => Name of model (used in alt text, tips, etc.)
 #
 #   Layout:
@@ -47,7 +47,7 @@
 #    data-left-desc  => Name for left link (optional, default '<data-name> Model')
 #
 #    data-right      => Right link
-#    data-right-icon => Icon Image for right link (optional, will use image resized)
+#    data-right-icon => Icon image for right link (optional, will use image resized)
 #    data-right-desc => Name for right link (optional, default '<data-name> Installed')
 #
 
@@ -122,7 +122,7 @@ if( $HELP ) {
 #
 # Check class
 #
-error( "tag ($CLASSNAME) is no a valid class name" ) if !( $CLASSNAME =~ /^\w+$/ );
+error( "tag ($CLASSNAME) is not a valid class name" ) if !( $CLASSNAME =~ /^\w+$/ );
 
 #
 # If no input files, error
@@ -202,7 +202,7 @@ sub expand($$)
   }
   $tag_description = "\n" . clean_description($tag_description) . "\n";
 
-  # Make a comment out of a XML/HTML tag
+  # Make a comment out of an XML/HTML tag
   sub tag_to_comment($)
   {
     my $s = shift;
@@ -303,8 +303,8 @@ sub expand($$)
 	}
       }
 
-      # Is the text expandable? 
-      our $is_expandable_desc = !defined($desc_width) || !looks_like_number($desc_width) || lc($desc_width) eq 'auto' || int($desc_width) <= 0; 
+      # Is the text expandable?
+      our $is_expandable_desc = !defined($desc_width) || !looks_like_number($desc_width) || lc($desc_width) eq 'auto' || int($desc_width) <= 0;
 
       # Set the image cell from the icon size
       our $img_cell_size  = $icon_size ? 2*$cell_padding+$icon_size : 0;
@@ -382,10 +382,10 @@ sub process_file($)
     $originalFile .= $_;
 
     # Our restrictions are:
-    #  The line must contain ONLY the tag and it contents
+    #  The line must contain ONLY the tag and its contents
     #    - case sensitive tag
     #    - surrounded by whitespace
-    #  The tag be either of the form:
+    #  The tag must be either of the form:
     #    1. Unexpanded:  <div class="tag" ...attributes.../>
     #    2. Expanded:
     #         <div class="tag" ...attributes...>...replaceable expanded content...
