@@ -52,6 +52,7 @@ runs:
       run: |
         # Use apt-get to install OpenSCAD and extra packages
         echo "::group::Install"
+        sudo apt-get update -qq
         if [ '${{ inputs.use_xvfb }}' = 'true' ]; then
           sudo apt-get install openscad xvfb ${{ inputs.extra_packages }}
         else
