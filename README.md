@@ -136,6 +136,8 @@ target option of the **build** action to make special targets and then uses the
   jobs:
     build:
       runs-on: ubuntu-latest
+      permissions:
+        contents: write
       steps:
       - name: Build Media
         uses: swthemathwiz/openscad-actions/build@v1
@@ -168,6 +170,8 @@ that includes built STL files:
   jobs:
     build:
       runs-on: ubuntu-latest
+      permissions:
+        contents: write
       steps:
       - name: Build
         uses: swthemathwiz/openscad-actions/build@v1
@@ -195,6 +199,8 @@ README.md file whenever it is pushed:
   jobs:
     build:
       runs-on: ubuntu-latest
+      permissions:
+        contents: write
       steps:
       - name: Annotate README.md
         uses: swthemathwiz/openscad-actions/annotate-models@v1
